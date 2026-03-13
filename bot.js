@@ -153,7 +153,7 @@ bot.on("message",msg=>{
 
     if(!db.groups[chatId]){
 
-      bot.sendMessage(chatId,"❌ Grup belum beli akses");
+      bot.sendMessage(chatId,"Grub belum berlangganan☹️ hubungi @vixzaaFy");
 
       return;
     }

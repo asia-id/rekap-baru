@@ -171,7 +171,7 @@ bot.on("message",msg=>{
 
     if(msg.from.id!==adminId && !db.members[msg.from.id]){
 
-      bot.sendMessage(chatId,"❌ Kamu belum beli akses");
+      bot.sendMessage(chatId,"❌ bot rekap hanya berfungsi khusus yang berlangganan, hubungi @vixzaaFy");
 
       return;
     }

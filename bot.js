@@ -172,12 +172,17 @@ THANKS FOR ORDER 🤖🤴`);
     }
 });
 
-// ===== ADD GROUP DENGAN DURASI =====
+// ===== ADD GROUP DENGAN DURASI & KOREKSI ID NEGATIF =====
 bot.onText(/\/addgroup (\d+)\s+(.+)/, (msg, match) => {
     if(msg.from.id !== adminId) return;
 
     let groupId = match[1];
     let durasi = match[2];
+
+    // koreksi otomatis untuk supergroup
+    if (!groupId.startsWith("-100") && groupId.length <= 10) {
+        groupId = "-100" + groupId;
+    }
 
     try {
         let expired = parseDurasi(durasi);
@@ -208,7 +213,7 @@ bot.onText(/\/hapususer (\d+)/, (msg, match) => {
 });
 
 // ===== HAPUS GRUP =====
-bot.onText(/\/hapusgrub (\d+)/, (msg, match) => {
+bot.onText(/\/hapusgrub (\-?\d+)/, (msg, match) => {
     if (msg.from.id !== adminId) return;
     let groupId = match[1];
     let db = loadDB();

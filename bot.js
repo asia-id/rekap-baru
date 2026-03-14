@@ -148,6 +148,58 @@ bot.onText(/\/addgroup (-?\d+)/, (msg, match) => {
     bot.sendMessage(msg.chat.id, "✅ Grup ditambahkan");
 });
 
+// ===== HAPUS USER =====
+bot.onText(/\/hapususer (\d+)/, (msg, match) => {
+    if (msg.from.id !== adminId) return;
+    let userId = match[1];
+    let db = loadDB();
+    if(db.members[userId]){
+        delete db.members[userId];
+        saveDB(db);
+        bot.sendMessage(msg.chat.id, `✅ User ${userId} dihapus dari langganan`);
+    } else {
+        bot.sendMessage(msg.chat.id, `⚠️ User ${userId} tidak ditemukan`);
+    }
+});
+
+// ===== HAPUS GRUB =====
+bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
+    if (msg.from.id !== adminId) return;
+    let groupId = match[1];
+    let db = loadDB();
+    if(db.groups[groupId]){
+        delete db.groups[groupId];
+        saveDB(db);
+        bot.sendMessage(msg.chat.id, `✅ Grup ${groupId} dihapus dari langganan`);
+    } else {
+        bot.sendMessage(msg.chat.id, `⚠️ Grup ${groupId} tidak ditemukan`);
+    }
+});
+
+// ===== LIST USER =====
+bot.onText(/\/listuser/, (msg) => {
+    if (msg.from.id !== adminId) return;
+    let db = loadDB();
+    let members = Object.keys(db.members);
+    if(members.length === 0){
+        bot.sendMessage(msg.chat.id, "⚠️ Tidak ada user yang berlangganan");
+    } else {
+        bot.sendMessage(msg.chat.id, `📋 List User Berlangganan:\n${members.join("\n")}`);
+    }
+});
+
+// ===== LIST GRUB =====
+bot.onText(/\/listgrub/, (msg) => {
+    if (msg.from.id !== adminId) return;
+    let db = loadDB();
+    let groups = Object.keys(db.groups);
+    if(groups.length === 0){
+        bot.sendMessage(msg.chat.id, "⚠️ Tidak ada grup yang berlangganan");
+    } else {
+        bot.sendMessage(msg.chat.id, `📋 List Grup Berlangganan:\n${groups.join("\n")}`);
+    }
+});
+
 // ===== CEK ID GRUP =====
 bot.onText(/\/cekidgrub/, msg => {
     if (!msg.chat.type.includes("group")) return;
@@ -183,7 +235,11 @@ bot.onText(/\/command/, (msg) => {
 
 /start        - Menampilkan pesan selamat datang
 /adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
+/hapususer    - Menghapus user dari langganan, format: /hapususer <userId>
+/listuser     - Menampilkan semua user berlangganan
 /addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
+/hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId>
+/listgrub     - Menampilkan semua grup berlangganan
 /cekidgrub    - Menampilkan ID grup tempat command dijalankan
 /command      - Menampilkan daftar semua command (ini)
 `;
@@ -213,8 +269,8 @@ bot.on("message", async msg => {
     let text = (msg.text || "").trim();
     if (!text) return;
 
-    // === ABADIKAN /start DAN /command ===
-    if(text.startsWith("/start") || text.startsWith("/command")) return;
+    // Abaikan /start, /command dan semua command admin
+    if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub)/)) return;
 
     let db = loadDB();
     let isGroup = msg.chat.type.includes("group");

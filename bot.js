@@ -142,9 +142,10 @@ sampai ${tanggal} ✅
 Silakan kirim list KB disini
 
 NOTE !!!!
-1. Langsung kirim list KB, karena fungsi /start tidak berfungsi. Setelah itu bot otomatis akan rekap.
+1. Langsung kirim list KB, karena fungsi /rekap tidak berfungsi. Setelah itu bot otomatis akan rekap.
 2. Fungsi /rekap hanya berfungsi di grub KB.
 Di bot ini tinggal kirim list saja
+3. list lain selain kb tidak boleh ada angka di belakangnya
 
 THANKS FOR ORDER 🤖🤴`);
 

@@ -108,6 +108,8 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match)=>{
         db.members[userId]=expired;
         saveDB(db);
         bot.sendMessage(msg.chat.id, `✅ User berhasil ditambahkan\nUser ID: ${userId}\nAktif sampai: ${formatTanggal(expired)}`);
+        // Kirim pesan konfirmasi ke user
+        bot.sendMessage(userId, `🎉 Anda sekarang berlangganan bot rekap hingga ${formatTanggal(expired)} ✅`);
     }catch(e){
         bot.sendMessage(msg.chat.id,"❌ Format durasi salah. Contoh: 1 hari, 7 hari, 1 bulan");
     }
@@ -142,6 +144,7 @@ bot.onText(/\/hapususer (\d+)/, (msg, match)=>{
         delete db.members[userId];
         saveDB(db);
         bot.sendMessage(msg.chat.id, `✅ User berhasil dihapus\nUser ID: ${userId}`);
+        bot.sendMessage(userId, `⚠️ Masa aktif Anda di bot rekap telah dicabut oleh admin.`);
     }else{
         bot.sendMessage(msg.chat.id, `⚠️ User ${userId} tidak ditemukan`);
     }
@@ -183,6 +186,11 @@ bot.onText(/\/listgrub/, (msg)=>{
     else bot.sendMessage(msg.chat.id,`📋 List Grup Berlangganan:\n${groups.join("\n")}`);
 });
 
+// CEK ID UNTUK SEMUA
+bot.onText(/\/cekid/, msg=>{
+    bot.sendMessage(msg.chat.id, `ID Chat Anda: ${msg.chat.id}`);
+});
+
 // CEK ID GRUP
 bot.onText(/\/cekidgrub/, msg=>{
     if(!msg.chat.type.includes("group")) return;
@@ -221,6 +229,7 @@ bot.onText(/\/command/, msg=>{
 /hapusgrub    - Menghapus grup (format: /hapusgrub <-groupId>)
 /listgrub     - Menampilkan semua grup berlangganan
 /cekidgrub    - Menampilkan ID grup
+/cekid        - Menampilkan ID chat (bisa digunakan siapa saja)
 /command      - Menampilkan daftar semua command
 `;
         bot.sendMessage(chatId,adminCommands);
@@ -230,6 +239,7 @@ bot.onText(/\/command/, msg=>{
 
 /rekap        - Rekap list KB (harus reply pesan list)
 /cekidgrub    - Menampilkan ID grup
+/cekid        - Menampilkan ID chat
 `;
         bot.sendMessage(chatId,groupCommands);
     }else{
@@ -238,6 +248,7 @@ bot.onText(/\/command/, msg=>{
 
 /start        - Menampilkan pesan selamat datang
 /rekap        - Rekap list KB (jika berlangganan)
+/cekid        - Menampilkan ID chat
 `;
         bot.sendMessage(chatId,userCommands);
     }
@@ -249,7 +260,7 @@ bot.on("message", async msg=>{
     let text=(msg.text||"").trim();
     if(!text) return;
 
-    if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub|cekidgrub)/)) return;
+    if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub|cekidgrub|cekid)/)) return;
 
     let db=loadDB();
     let isGroup=msg.chat.type.includes("group");

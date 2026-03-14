@@ -127,9 +127,9 @@ let hasil="";
 if(totalKecil===totalBesar){
 hasil=`🥳 KECIL dan BESAR sama`;
 }else if(totalKecil>totalBesar){
-hasil=`📉 BESAR kurang ${totalKecil-totalBesar}`;
+hasil=`📉 BESAR kurang: ${totalKecil-totalBesar}`;
 }else{
-hasil=`📉 KECIL kurang ${totalBesar-totalKecil}`;
+hasil=`📉 KECIL kurang: ${totalBesar-totalKecil}`;
 }
 
 return `
@@ -139,7 +139,7 @@ return `
 
 ${hasil}
 
-💰 Saldo : ${saldo} K
+💰 Saldo Anda Seharusnya : ${saldo} K
 `;
 
 }

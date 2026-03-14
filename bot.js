@@ -173,11 +173,51 @@ Keunggulan fitur:
     bot.sendMessage(chatId, welcomeMessage);
 });
 
+// ===== COMMAND LIST TERPISAH =====
+bot.onText(/\/command/, (msg) => {
+    const chatId = msg.chat.id;
+
+    if(msg.from.id === adminId){ 
+        // Admin utama
+        const adminCommands = `
+📜 Command Admin Utama:
+
+/start        - Menampilkan pesan selamat datang
+/adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
+/addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
+/cekidgrub    - Menampilkan ID grup tempat command dijalankan
+/command      - Menampilkan daftar semua command (ini)
+`;
+        bot.sendMessage(chatId, adminCommands);
+    } else if(msg.chat.type.includes("group")) {
+        // User di grup
+        const groupCommands = `
+📜 Command Grup:
+
+/rekap        - Rekap list KB (harus reply pesan list)
+/cekidgrub    - Menampilkan ID grup
+`;
+        bot.sendMessage(chatId, groupCommands);
+    } else {
+        // User biasa
+        const userCommands = `
+📜 Command User:
+
+/start        - Menampilkan pesan selamat datang
+/rekap        - Rekap list KB (jika berlangganan)
+`;
+        bot.sendMessage(chatId, userCommands);
+    }
+});
+
 // ===== MESSAGE HANDLER =====
 bot.on("message", async msg => {
     let chatId = msg.chat.id;
     let text = (msg.text || "").trim();
     if (!text) return;
+
+    // ABAIKAN CEK MEMBER JIKA /start ATAU /command
+    if (text === "/start" || text === "/command") return;
 
     let db = loadDB();
     let isGroup = msg.chat.type.includes("group");

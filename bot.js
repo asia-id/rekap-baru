@@ -26,21 +26,17 @@ function saveDB(data) {
 
 // ===== PARSE DURASI =====
 function parseDurasi(text) {
-    text = text.toLowerCase().trim();
-    if(text === "permanen") return "permanen";
-
     let now = new Date();
     let match = text.match(/(\d+)/);
     let angka = match ? parseInt(match[1]) : 1;
+
+    text = text.toLowerCase();
 
     if (text.includes("hari")) now.setDate(now.getDate() + angka);
     else if (text.includes("minggu")) now.setDate(now.getDate() + (angka * 7));
     else if (text.includes("bulan")) now.setMonth(now.getMonth() + angka);
     else if (text.includes("tahun")) now.setFullYear(now.getFullYear() + angka);
     else throw new Error("Format durasi salah");
-
-    // set jam expired 23:59
-    now.setHours(23, 59, 0, 0);
 
     return now.getTime();
 }
@@ -50,26 +46,13 @@ function cekMember(id) {
     let db = loadDB();
     if (!db.members[id]) return "notfound";
 
-    if(db.members[id] !== "permanen" && Date.now() > db.members[id]) {
+    if (Date.now() > db.members[id]) {
         delete db.members[id];
         saveDB(db);
         bot.sendMessage(id, "❌ Masa aktif kamu telah habis ☹️, order lagi di @vixzaaFy");
         return "expired";
     }
-    return "active";
-}
 
-// ===== CEK GRUP EXPIRED =====
-function cekGrup(id) {
-    let db = loadDB();
-    if (!db.groups[id]) return "notfound";
-
-    if(db.groups[id] !== "permanen" && Date.now() > db.groups[id]) {
-        delete db.groups[id];
-        saveDB(db);
-        bot.sendMessage(id, "❌ Masa aktif grup telah habis ☹️, order lagi di @vixzaaFy");
-        return "expired";
-    }
     return "active";
 }
 
@@ -136,41 +119,62 @@ ${hasil}
 `;
 }
 
-// ===== STATE ADMIN UNTUK ADDUSER =====
-const waitingForAddUser = {};
+// ===== ADD USER DENGAN DURASI + PESAN OTOMATIS =====
+bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
 
-// ===== COMMAND /ADDUSER =====
-bot.onText(/^\/adduser$/, (msg) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+    let userId = match[1];
+    let durasi = match[2];
 
-    waitingForAddUser[msg.from.id] = true;
-    bot.sendMessage(msg.chat.id, `📌 SILAHKAN KIRIM ID DAN DURASI
-Contoh: "828376637 1 hari" (atau "828376637 permanen")`);
-});
-
-// ===== ADD GROUP =====
-bot.onText(/\/addgroup (-?\d+)(?: (.+))?/, (msg, match) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
-
-    let groupId = match[1];
-    let durasi = match[2] || "permanen"; // default permanen
-
-    try{
+    try {
         let expired = parseDurasi(durasi);
         let db = loadDB();
-        db.groups[groupId] = expired;
+        db.members[userId] = expired;
         saveDB(db);
 
-        let expiredText = expired === "permanen" ? "Permanen" : new Date(expired).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
-        bot.sendMessage(msg.chat.id, `✅ Grup ${groupId} aktif sampai ${expiredText}`);
-    } catch(e){
+        let tanggal = new Date(expired).toLocaleString("id-ID");
+        bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${tanggal}`);
+
+        bot.sendMessage(userId, 
+`🎉 Selamat! Kamu sekarang aktif berlangganan BOT REKAP
+sampai ${tanggal} ✅
+
+Silakan kirim list KB disini
+
+NOTE !!!!
+1. Langsung kirim list KB, karena fungsi /start tidak berfungsi. Setelah itu bot otomatis akan rekap.
+2. Fungsi /rekap hanya berfungsi di grub KB.
+Di bot ini tinggal kirim list saja
+
+THANKS FOR ORDER 🤖🤴`);
+
+    } catch (e) {
         bot.sendMessage(msg.chat.id, "❌ Format durasi salah");
     }
 });
 
+// ===== ADD GROUP =====
+bot.onText(/\/addgroup (-?\d+)/, (msg, match) => {
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
+    let db = loadDB();
+    db.groups[match[1]] = true;
+    saveDB(db);
+
+    bot.sendMessage(msg.chat.id, "✅ Grup ditambahkan");
+});
+
 // ===== HAPUS USER =====
 bot.onText(/\/hapususer (\d+)/, (msg, match) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
 
     let userId = match[1];
     let db = loadDB();
@@ -186,7 +190,10 @@ bot.onText(/\/hapususer (\d+)/, (msg, match) => {
 
 // ===== HAPUS GRUP =====
 bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
 
     let groupId = match[1];
     let db = loadDB();
@@ -194,7 +201,6 @@ bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
         delete db.groups[groupId];
         saveDB(db);
         bot.sendMessage(msg.chat.id, `✅ Grup ${groupId} dihapus dari langganan`);
-        bot.sendMessage(groupId, "❌ Masa aktif grup telah habis ☹️, order lagi di @vixzaaFy");
     } else {
         bot.sendMessage(msg.chat.id, `⚠️ Grup ${groupId} tidak ditemukan`);
     }
@@ -202,36 +208,41 @@ bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
 
 // ===== LIST USER =====
 bot.onText(/\/listuser/, (msg) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
 
     let db = loadDB();
     let members = Object.keys(db.members);
     if(members.length === 0){
         bot.sendMessage(msg.chat.id, "⚠️ Tidak ada user yang berlangganan");
     } else {
-        let membersInfo = members.map(id => `${id} : ${db.members[id] === "permanen" ? "Permanen" : new Date(db.members[id]).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"})}`);
+        let membersInfo = members.map(id => `${id} : ${new Date(db.members[id]).toLocaleString("id-ID")}`);
         bot.sendMessage(msg.chat.id, `📋 List User Berlangganan:\n${membersInfo.join("\n")}`);
     }
 });
 
 // ===== LIST GRUP =====
 bot.onText(/\/listgrub/, (msg) => {
-    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+    if (msg.from.id !== adminId) {
+        bot.sendMessage(msg.chat.id, "❌ Hanya admin yang bisa menggunakan perintah ini");
+        return;
+    }
 
     let db = loadDB();
     let groups = Object.keys(db.groups);
     if(groups.length === 0){
         bot.sendMessage(msg.chat.id, "⚠️ Tidak ada grup yang berlangganan");
     } else {
-        let groupsInfo = groups.map(id => `${id} : ${db.groups[id] === "permanen" ? "Permanen" : new Date(db.groups[id]).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"})}`);
-        bot.sendMessage(msg.chat.id, `📋 List Grup Berlangganan:\n${groupsInfo.join("\n")}`);
+        bot.sendMessage(msg.chat.id, `📋 List Grup Berlangganan:\n${groups.join("\n")}`);
     }
 });
 
-// ===== START =====
+// ===== START COMMAND =====
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
-    const status = cekMember(msg.from.id);
+    let status = cekMember(msg.from.id);
 
     const welcomeMessage = `
 🎉 SELAMAT DATANG DI BOT REKAP 🙌
@@ -245,8 +256,8 @@ Keunggulan fitur:
 ⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
 `;
 
-    if(msg.from.id !== adminId && status === "active"){
-        bot.sendMessage(chatId, "🎉 Selamat! Kamu sekarang aktif berlangganan BOT REKAP ✅\nSilakan kirim list KB langsung");
+    if (msg.from.id !== adminId && status === "active") {
+        bot.sendMessage(chatId, "Selamat! Anda aktif berlangganan ✅");
     } else {
         bot.sendMessage(chatId, welcomeMessage);
     }
@@ -255,19 +266,23 @@ Keunggulan fitur:
 // ===== CEK ID =====
 bot.onText(/\/cekid/, async (msg) => {
     const chatId = msg.chat.id;
+    const userId = msg.from.id;
     const chatType = msg.chat.type;
 
     if(chatType === "private"){
-        bot.sendMessage(chatId, `👤 ID Anda: ${msg.from.id}`);
+        bot.sendMessage(chatId, `👤 ID Anda: ${userId}`);
     } else if(chatType.includes("group")){
+        // hanya admin grup yang bisa /cekid
         try{
-            const member = await bot.getChatMember(chatId, msg.from.id);
+            const member = await bot.getChatMember(chatId, userId);
             if(member.status !== "administrator" && member.status !== "creator"){
                 bot.sendMessage(chatId, "❌ Hanya admin grup yang bisa menggunakan perintah ini");
                 return;
             }
-        } catch(e){ return; }
-        bot.sendMessage(chatId, `📌 ID Grup: ${chatId}`);
+        } catch(e){
+            return;
+        }
+        bot.sendMessage(chatId, `📌 ID Grup: ${chatId}\n👤 ID Anda: ${userId}`);
     }
 });
 
@@ -280,14 +295,14 @@ bot.onText(/\/command/, (msg) => {
 📜 Command Admin Utama:
 
 /start        - Menampilkan pesan selamat datang
-/adduser      - Menambahkan user (conversation mode)
-/hapususer    - Menghapus user dari langganan
+/adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
+/hapususer    - Menghapus user dari langganan, format: /hapususer <userId>
 /listuser     - Menampilkan semua user berlangganan
-/addgroup     - Menambahkan grup dengan durasi/permanen
-/hapusgrub    - Menghapus grup dari langganan
+/addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
+/hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId>
 /listgrub     - Menampilkan semua grup berlangganan
-/cekid        - Menampilkan ID grup/user sesuai chat
-/command      - Menampilkan daftar semua command
+/cekid        - Menampilkan ID grup & ID user
+/command      - Menampilkan daftar semua command (ini)
 `;
         bot.sendMessage(chatId, adminCommands);
     } else if(msg.chat.type.includes("group")) {
@@ -309,78 +324,36 @@ bot.on("message", async msg => {
     const chatId = msg.chat.id;
     const text = (msg.text || "").trim();
     const isGroup = msg.chat.type.includes("group");
-    if(!text) return;
+    if (!text) return;
 
-    // Handle conversation state untuk adduser
-    if(waitingForAddUser[msg.from.id]){
-        const parts = text.split(" ");
-        if(parts.length < 2){
-            bot.sendMessage(chatId, "❌ Format salah. Contoh: 828376637 1 hari atau 828376637 permanen");
-            return;
-        }
-
-        const userId = parts[0];
-        const durasi = parts.slice(1).join(" ");
-
-        try{
-            const expired = parseDurasi(durasi);
-            const db = loadDB();
-            db.members[userId] = expired;
-            saveDB(db);
-
-            let expiredText = expired === "permanen" ? "Permanen" : new Date(expired).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
-            bot.sendMessage(chatId, `✅ User ${userId} aktif sampai ${expiredText}`);
-
-            bot.sendMessage(userId, `🎉 Selamat! Kamu sekarang aktif berlangganan BOT REKAP
-sampai ${expiredText} ✅
-
-Silakan kirim list KB disini
-NOTE:
-1. Langsung kirim list KB, karena fungsi /start tidak berfungsi. Setelah itu bot otomatis akan rekap.
-2. Fungsi /rekap hanya berlaku di grub KB.
-THANKS FOR ORDER 🤖🤴`);
-
-            delete waitingForAddUser[msg.from.id];
-        } catch(e){
-            bot.sendMessage(chatId, "❌ Format durasi salah, contoh: 828376637 1 hari atau 828376637 permanen");
-        }
-        return;
-    }
-
-    // Abaikan semua command
-    if(text.startsWith("/")) return;
+    // Abaikan command yang di-handle di atas
+    if(text.startsWith("/") ) return;
 
     const db = loadDB();
 
     if(isGroup){
-        try{
+        try {
             const member = await bot.getChatMember(chatId, msg.from.id);
             if(member.status !== "administrator" && member.status !== "creator"){
                 return; // user biasa di grup tidak bisa mengirim apapun
             }
-        } catch(e){ return; }
-
-        if(!db.groups[chatId]) {
-            bot.sendMessage(chatId, "Grub belum berlangganan ☹️ hubungi @vixzaaFy");
+        } catch(e){
             return;
         }
-
-        if(!msg.reply_to_message){
-            bot.sendMessage(chatId, "⚠️ Reply list dengan /rekap");
-            return;
+        // Admin grup bisa kirim list untuk /rekap
+        if(msg.reply_to_message){
+            bot.sendMessage(chatId, hitungList(msg.reply_to_message.text));
         }
-
-        bot.sendMessage(chatId, hitungList(msg.reply_to_message.text));
-
     } else {
+        // Chat pribadi → cek member
         if(msg.from.id !== adminId){
             const status = cekMember(msg.from.id);
-            if(status === "notfound"){
+            if(status === "notfound") {
                 bot.sendMessage(chatId, "❌ Bot rekap hanya untuk yang berlangganan, hubungi @vixzaaFy");
                 return;
             }
             if(status === "expired"){
-                return;
+                return; // pesan sudah dikirim otomatis di cekMember
             }
         }
         bot.sendMessage(chatId, hitungList(text));

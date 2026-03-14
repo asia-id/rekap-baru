@@ -49,6 +49,8 @@ function cekMember(id) {
     if (Date.now() > db.members[id]) {
         delete db.members[id];
         saveDB(db);
+        // Kirim pesan otomatis ke user kalau masa aktif habis
+        bot.sendMessage(id, "❌ Masa aktif kamu telah habis ☹️, order lagi di @vixzaaFy");
         return "expired";
     }
 
@@ -134,7 +136,7 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
         let tanggal = new Date(expired).toLocaleString("id-ID");
         bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${tanggal}`);
 
-        // ===== Kirim pesan otomatis ke user dengan enter/line break =====
+        // Kirim pesan otomatis ke user dengan enter/line break
         bot.sendMessage(userId, 
 `🎉 Selamat! Kamu sekarang aktif berlangganan BOT REKAP
 sampai ${tanggal} ✅
@@ -142,10 +144,9 @@ sampai ${tanggal} ✅
 Silakan kirim list KB disini
 
 NOTE !!!!
-1. Langsung kirim list KB, karena fungsi /rekap tidak berfungsi. Setelah itu bot otomatis akan rekap.
+1. Langsung kirim list KB, karena fungsi /start tidak berfungsi. Setelah itu bot otomatis akan rekap.
 2. Fungsi /rekap hanya berfungsi di grub KB.
 Di bot ini tinggal kirim list saja
-3. list lain selain kb tidak boleh ada angka di belakangnya
 
 THANKS FOR ORDER 🤖🤴`);
 
@@ -174,6 +175,9 @@ bot.onText(/\/hapususer (\d+)/, (msg, match) => {
         delete db.members[userId];
         saveDB(db);
         bot.sendMessage(msg.chat.id, `✅ User ${userId} dihapus dari langganan`);
+
+        // Kirim pesan otomatis ke user
+        bot.sendMessage(userId, "❌ Masa aktif kamu telah habis ☹️, order lagi di @vixzaaFy");
     } else {
         bot.sendMessage(msg.chat.id, `⚠️ User ${userId} tidak ditemukan`);
     }
@@ -246,7 +250,6 @@ Keunggulan fitur:
 - Dapat dimasukkan ke grup KB
 
 ⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
-/command untuk menampilkan comman user.
 `;
 
     if (msg.from.id !== adminId && status === "active") {
@@ -264,6 +267,7 @@ bot.onText(/\/command/, (msg) => {
         const adminCommands = `
 📜 Command Admin Utama:
 
+/start        - Menampilkan pesan selamat datang
 /adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
 /hapususer    - Menghapus user dari langganan, format: /hapususer <userId>
 /listuser     - Menampilkan semua user berlangganan
@@ -341,8 +345,7 @@ bot.on("message", async msg => {
             }
 
             if (status === "expired") {
-                bot.sendMessage(chatId, "❌ masa aktif kamu sudah habis");
-                return;
+                return; // pesan sudah dikirim otomatis di cekMember
             }
         }
 

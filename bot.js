@@ -118,7 +118,7 @@ ${hasil}
 `;
 }
 
-// ===== ADD USER DENGAN DURASI =====
+// ===== ADD USER DENGAN DURASI + PESAN OTOMATIS MULTILINE =====
 bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
     if (msg.from.id !== adminId) return;
 
@@ -131,9 +131,23 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
         db.members[userId] = expired;
         saveDB(db);
 
-        // Format tanggal Indonesia
         let tanggal = new Date(expired).toLocaleString("id-ID");
         bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${tanggal}`);
+
+        // ===== Kirim pesan otomatis ke user dengan enter/line break =====
+        bot.sendMessage(userId, 
+`🎉 Selamat! Kamu sekarang aktif berlangganan BOT REKAP
+sampai ${tanggal} ✅
+
+Silakan kirim list KB disini
+
+NOTE !!!!
+1. Langsung kirim list KB, karena fungsi /start tidak berfungsi. Setelah itu bot otomatis akan rekap.
+2. Fungsi /rekap hanya berfungsi di grub KB.
+Di bot ini tinggal kirim list saja
+
+THANKS FOR ORDER 🤖🤴`);
+
     } catch (e) {
         bot.sendMessage(msg.chat.id, "❌ Format durasi salah");
     }
@@ -164,7 +178,7 @@ bot.onText(/\/hapususer (\d+)/, (msg, match) => {
     }
 });
 
-// ===== HAPUS GRUB =====
+// ===== HAPUS GRUP =====
 bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
     if (msg.from.id !== adminId) return;
     let groupId = match[1];
@@ -231,6 +245,7 @@ Keunggulan fitur:
 - Dapat dimasukkan ke grup KB
 
 ⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
+/command untuk menampilkan comman user.
 `;
 
     if (msg.from.id !== adminId && status === "active") {
@@ -248,7 +263,6 @@ bot.onText(/\/command/, (msg) => {
         const adminCommands = `
 📜 Command Admin Utama:
 
-/start        - Menampilkan pesan selamat datang
 /adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
 /hapususer    - Menghapus user dari langganan, format: /hapususer <userId>
 /listuser     - Menampilkan semua user berlangganan

@@ -178,7 +178,6 @@ bot.onText(/\/command/, (msg) => {
     const chatId = msg.chat.id;
 
     if(msg.from.id === adminId){ 
-        // Admin utama
         const adminCommands = `
 📜 Command Admin Utama:
 
@@ -190,7 +189,6 @@ bot.onText(/\/command/, (msg) => {
 `;
         bot.sendMessage(chatId, adminCommands);
     } else if(msg.chat.type.includes("group")) {
-        // User di grup
         const groupCommands = `
 📜 Command Grup:
 
@@ -199,7 +197,6 @@ bot.onText(/\/command/, (msg) => {
 `;
         bot.sendMessage(chatId, groupCommands);
     } else {
-        // User biasa
         const userCommands = `
 📜 Command User:
 
@@ -216,8 +213,8 @@ bot.on("message", async msg => {
     let text = (msg.text || "").trim();
     if (!text) return;
 
-    // ABAIKAN CEK MEMBER JIKA /start ATAU /command
-    if (text === "/start" || text === "/command") return;
+    // === ABADIKAN /start DAN /command ===
+    if(text.startsWith("/start") || text.startsWith("/command")) return;
 
     let db = loadDB();
     let isGroup = msg.chat.type.includes("group");

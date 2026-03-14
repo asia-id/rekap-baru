@@ -44,10 +44,11 @@ function parseDurasi(text) {
 // ===== CEK MEMBER =====
 function cekMember(id) {
     let db = loadDB();
-    if (!db.members[id]) return "notfound";
+    const strId = String(id);
+    if (!db.members[strId]) return "notfound";
 
-    if(db.members[id] !== "permanen" && Date.now() > db.members[id]) {
-        delete db.members[id];
+    if(db.members[strId] !== "permanen" && Date.now() > db.members[strId]) {
+        delete db.members[strId];
         saveDB(db);
         bot.sendMessage(id, "❌ Masa aktif kamu telah habis ☹️, order lagi di @vixzaaFy");
         return "expired";
@@ -58,10 +59,11 @@ function cekMember(id) {
 // ===== CEK GRUP =====
 function cekGrup(id) {
     let db = loadDB();
-    if (!db.groups[id]) return "notfound";
+    const strId = String(id);
+    if (!db.groups[strId]) return "notfound";
 
-    if(db.groups[id] !== "permanen" && Date.now() > db.groups[id]) {
-        delete db.groups[id];
+    if(db.groups[strId] !== "permanen" && Date.now() > db.groups[strId]) {
+        delete db.groups[strId];
         saveDB(db);
         bot.sendMessage(id, "❌ Masa aktif grup telah habis ☹️, order lagi di @vixzaaFy");
         return "expired";
@@ -192,6 +194,12 @@ bot.onText(/^\/command$/, msg => {
     }
 });
 
+// ===== CEK ID ADMIN =====
+bot.onText(/^\/cekid$/, msg => {
+    if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin");
+    bot.sendMessage(msg.chat.id, `ID Chat: ${msg.chat.id}\nID User: ${msg.from.id}`);
+});
+
 // ===== HANDLE MESSAGE =====
 bot.on("message", async msg => {
     const chatId = msg.chat.id;
@@ -209,7 +217,7 @@ bot.on("message", async msg => {
         const durasi = parts.slice(1).join(" ");
         try{
             const expired = parseDurasi(durasi);
-            db.members[userId] = expired;
+            db.members[String(userId)] = expired;
             saveDB(db);
             let expiredText = expired === "permanen" ? "Permanen" : new Date(expired).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
             bot.sendMessage(chatId, `✅ User ${userId} aktif sampai ${expiredText}`);
@@ -221,8 +229,8 @@ bot.on("message", async msg => {
 
     if(waitingForDeleteUser[msg.from.id]){
         const userId = text;
-        if(db.members[userId]){
-            delete db.members[userId];
+        if(db.members[String(userId)]){
+            delete db.members[String(userId)];
             saveDB(db);
             bot.sendMessage(chatId, `✅ User ${userId} berhasil dihapus`);
             bot.sendMessage(userId, "❌ Masa aktif kamu telah habis ☹️, order lagi di @vixzaaFy");
@@ -238,7 +246,7 @@ bot.on("message", async msg => {
         const durasi = parts.slice(1).join(" ");
         try{
             const expired = parseDurasi(durasi);
-            db.groups[groupId] = expired;
+            db.groups[String(groupId)] = expired;
             saveDB(db);
             let expiredText = expired === "permanen" ? "Permanen" : new Date(expired).toLocaleString("id-ID", {day:"2-digit", month:"2-digit", year:"numeric", hour:"2-digit", minute:"2-digit"});
             bot.sendMessage(chatId, `✅ Grup ${groupId} aktif sampai ${expiredText}`);
@@ -250,8 +258,8 @@ bot.on("message", async msg => {
 
     if(waitingForDeleteGroup[msg.from.id]){
         const groupId = text;
-        if(db.groups[groupId]){
-            delete db.groups[groupId];
+        if(db.groups[String(groupId)]){
+            delete db.groups[String(groupId)];
             saveDB(db);
             bot.sendMessage(chatId, `✅ Grup ${groupId} berhasil dihapus`);
             bot.sendMessage(groupId, "❌ Masa aktif grup telah habis ☹️, order lagi di @vixzaaFy");
@@ -260,24 +268,27 @@ bot.on("message", async msg => {
         return;
     }
 
-    // ===== HANDLE REKAP =====
+    // ===== HANDLE GROUP =====
     if(isGroup){
         try{
             const member = await bot.getChatMember(chatId, msg.from.id);
             if(member.status !== "administrator" && member.status !== "creator") return; // user biasa tidak bisa
         } catch(e){ return; }
 
-        if(!db.groups[chatId]){
+        // Cek grup berlangganan
+        const grupStatus = cekGrup(chatId);
+        if(grupStatus === "notfound" || grupStatus === "expired"){
             bot.sendMessage(chatId, "Grub belum berlangganan ☹️ hubungi @vixzaaFy");
             return;
         }
 
-        // proses /rekap reply
+        // Proses /rekap hanya reply
         if(msg.reply_to_message && text.startsWith("/rekap")){
             const replyText = msg.reply_to_message.text;
             if(!replyText || !replyText.trim()){ bot.sendMessage(chatId, "⚠️ Pesan reply kosong"); return; }
             bot.sendMessage(chatId, hitungList(replyText));
         }
+        return;
     }
 
     // ===== HANDLE PRIVATE CHAT =====

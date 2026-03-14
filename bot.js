@@ -20,6 +20,17 @@ function loadDB() {
 }
 function saveDB(data) { fs.writeFileSync(dbFile, JSON.stringify(data, null, 2)); }
 
+// ===== FORMAT TANGGAL =====
+function formatTanggal(t) {
+    let d = new Date(t);
+    let day = String(d.getDate()).padStart(2,'0');
+    let month = String(d.getMonth()+1).padStart(2,'0');
+    let year = d.getFullYear();
+    let hours = String(d.getHours()).padStart(2,'0');
+    let minutes = String(d.getMinutes()).padStart(2,'0');
+    return `${day}/${month}/${year} ${hours}:${minutes}`;
+}
+
 // ===== PARSE DURASI =====
 function parseDurasi(text) {
     let now = new Date();
@@ -96,7 +107,7 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match)=>{
         let db=loadDB();
         db.members[userId]=expired;
         saveDB(db);
-        bot.sendMessage(msg.chat.id, `✅ User berhasil ditambahkan\nUser ID: ${userId}\nAktif sampai: ${new Date(expired).toLocaleString()}`);
+        bot.sendMessage(msg.chat.id, `✅ User berhasil ditambahkan\nUser ID: ${userId}\nAktif sampai: ${formatTanggal(expired)}`);
     }catch(e){
         bot.sendMessage(msg.chat.id,"❌ Format durasi salah. Contoh: 1 hari, 7 hari, 1 bulan");
     }
@@ -116,7 +127,7 @@ bot.onText(/\/addgroup (.+) (.+)/, (msg, match)=>{
         let db=loadDB();
         db.groups[groupId]=expired;
         saveDB(db);
-        bot.sendMessage(msg.chat.id, `✅ Grup berhasil ditambahkan\nGrup ID: ${groupId}\nAktif sampai: ${new Date(expired).toLocaleString()}`);
+        bot.sendMessage(msg.chat.id, `✅ Grup berhasil ditambahkan\nGrup ID: ${groupId}\nAktif sampai: ${formatTanggal(expired)}`);
     }catch(e){
         bot.sendMessage(msg.chat.id,"❌ Format durasi salah. Contoh: 1 hari, 7 hari, 1 bulan");
     }
@@ -238,7 +249,6 @@ bot.on("message", async msg=>{
     let text=(msg.text||"").trim();
     if(!text) return;
 
-    // Abaikan command admin
     if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub|cekidgrub)/)) return;
 
     let db=loadDB();
@@ -246,12 +256,10 @@ bot.on("message", async msg=>{
 
     if(isGroup){
         if(!text.startsWith("/rekap")) return;
-
         if(!db.groups[chatId]){
             bot.sendMessage(chatId,"Grub belum berlangganan☹️ hubungi @vixzaaFy");
             return;
         }
-
         try{
             let member=await bot.getChatMember(chatId,msg.from.id);
             if(member.status!=="administrator" && member.status!=="creator"){
@@ -259,14 +267,11 @@ bot.on("message", async msg=>{
                 return;
             }
         }catch(e){ return; }
-
         if(!msg.reply_to_message){
             bot.sendMessage(chatId,"⚠️ Reply list dengan /rekap");
             return;
         }
-
         bot.sendMessage(chatId,hitungList(msg.reply_to_message.text));
-
     }else{
         if(msg.from.id!==adminId){
             let status=cekMember(msg.from.id);

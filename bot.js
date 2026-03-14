@@ -12,14 +12,12 @@ const adminId = 6623205535;
 
 // ===== DATABASE =====
 const dbFile = "database.json";
-
 function loadDB() {
     if (!fs.existsSync(dbFile)) {
         fs.writeFileSync(dbFile, JSON.stringify({ members: {}, groups: {} }, null, 2));
     }
     return JSON.parse(fs.readFileSync(dbFile));
 }
-
 function saveDB(data) {
     fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
@@ -189,9 +187,6 @@ bot.on("message", async msg => {
 
     const db = loadDB();
 
-    // Abaikan command
-    if(text.startsWith("/")) return;
-
     // --- ADD USER ---
     if(waitingForAddUser[msg.from.id]){
         const parts = text.split(" ");
@@ -256,10 +251,9 @@ bot.on("message", async msg => {
 
     // ===== HANDLE REKAP =====
     if(isGroup){
-        // hanya admin bisa /rekap
         try{
             const member = await bot.getChatMember(chatId, msg.from.id);
-            if(member.status !== "administrator" && member.status !== "creator") return;
+            if(member.status !== "administrator" && member.status !== "creator") return; // user biasa tidak bisa
         } catch(e){ return; }
 
         if(!db.groups[chatId]){
@@ -267,11 +261,29 @@ bot.on("message", async msg => {
             return;
         }
 
-        // proses /rekap reply
-        if(msg.reply_to_message && text.startsWith("/rekap")){
+        // fallback: langsung hitung list jika admin kirim teks list
+        if(text.startsWith("/rekap") && msg.reply_to_message){
             const replyText = msg.reply_to_message.text;
             if(!replyText || !replyText.trim()){ bot.sendMessage(chatId, "⚠️ Pesan reply kosong"); return; }
             bot.sendMessage(chatId, hitungList(replyText));
         }
     }
+
+    // ===== HANDLE PRIVATE CHAT =====
+    if(!isGroup){
+        if(msg.from.id !== adminId){
+            let status = cekMember(msg.from.id);
+            if(status === "notfound"){
+                bot.sendMessage(chatId, "❌ Bot rekap hanya untuk yang berlangganan, hubungi @vixzaaFy");
+                return;
+            }
+            if(status === "expired") return;
+        }
+        bot.sendMessage(chatId, hitungList(text));
+    }
+});
+
+// ===== ERROR =====
+bot.on("polling_error", err => {
+    console.log(err.message);
 });

@@ -266,15 +266,13 @@ Keunggulan fitur:
 // ===== CEK ID =====
 bot.onText(/\/cekid/, async (msg) => {
     const chatId = msg.chat.id;
-    const userId = msg.from.id;
     const chatType = msg.chat.type;
 
     if(chatType === "private"){
-        bot.sendMessage(chatId, `👤 ID Anda: ${userId}`);
+        bot.sendMessage(chatId, `👤 ID Anda: ${msg.from.id}`);
     } else if(chatType.includes("group")){
-        // hanya admin grup yang bisa /cekid
         try{
-            const member = await bot.getChatMember(chatId, userId);
+            const member = await bot.getChatMember(chatId, msg.from.id);
             if(member.status !== "administrator" && member.status !== "creator"){
                 bot.sendMessage(chatId, "❌ Hanya admin grup yang bisa menggunakan perintah ini");
                 return;
@@ -282,7 +280,7 @@ bot.onText(/\/cekid/, async (msg) => {
         } catch(e){
             return;
         }
-        bot.sendMessage(chatId, `📌 ID Grup: ${chatId}\n👤 ID Anda: ${userId}`);
+        bot.sendMessage(chatId, `📌 ID Grup: ${chatId}`);
     }
 });
 
@@ -301,7 +299,7 @@ bot.onText(/\/command/, (msg) => {
 /addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
 /hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId>
 /listgrub     - Menampilkan semua grup berlangganan
-/cekid        - Menampilkan ID grup & ID user
+/cekid        - Menampilkan ID grup atau ID user sesuai chat
 /command      - Menampilkan daftar semua command (ini)
 `;
         bot.sendMessage(chatId, adminCommands);
@@ -326,8 +324,7 @@ bot.on("message", async msg => {
     const isGroup = msg.chat.type.includes("group");
     if (!text) return;
 
-    // Abaikan command yang di-handle di atas
-    if(text.startsWith("/") ) return;
+    if(text.startsWith("/")) return; // abaikan command
 
     const db = loadDB();
 
@@ -345,7 +342,6 @@ bot.on("message", async msg => {
             bot.sendMessage(chatId, hitungList(msg.reply_to_message.text));
         }
     } else {
-        // Chat pribadi → cek member
         if(msg.from.id !== adminId){
             const status = cekMember(msg.from.id);
             if(status === "notfound") {
@@ -353,7 +349,7 @@ bot.on("message", async msg => {
                 return;
             }
             if(status === "expired"){
-                return; // pesan sudah dikirim otomatis di cekMember
+                return;
             }
         }
         bot.sendMessage(chatId, hitungList(text));

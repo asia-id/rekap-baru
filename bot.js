@@ -131,7 +131,9 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
         db.members[userId] = expired;
         saveDB(db);
 
-        bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${new Date(expired).toLocaleString()}`);
+        // Format tanggal Indonesia
+        let tanggal = new Date(expired).toLocaleString("id-ID");
+        bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${tanggal}`);
     } catch (e) {
         bot.sendMessage(msg.chat.id, "❌ Format durasi salah");
     }
@@ -184,7 +186,8 @@ bot.onText(/\/listuser/, (msg) => {
     if(members.length === 0){
         bot.sendMessage(msg.chat.id, "⚠️ Tidak ada user yang berlangganan");
     } else {
-        bot.sendMessage(msg.chat.id, `📋 List User Berlangganan:\n${members.join("\n")}`);
+        let membersInfo = members.map(id => `${id} : ${new Date(db.members[id]).toLocaleString("id-ID")}`);
+        bot.sendMessage(msg.chat.id, `📋 List User Berlangganan:\n${membersInfo.join("\n")}`);
     }
 });
 
@@ -200,15 +203,23 @@ bot.onText(/\/listgrub/, (msg) => {
     }
 });
 
-// ===== CEK ID GRUP =====
-bot.onText(/\/cekidgrub/, msg => {
-    if (!msg.chat.type.includes("group")) return;
-    bot.sendMessage(msg.chat.id, `ID Grup : ${msg.chat.id}`);
+// ===== CEK ID =====
+bot.onText(/\/cekid/, msg => {
+    const chatId = msg.chat.id;
+    const userId = msg.from.id;
+    const chatType = msg.chat.type;
+
+    if (chatType.includes("group")) {
+        bot.sendMessage(chatId, `📌 ID Grup: ${chatId}\n👤 ID Anda: ${userId}`);
+    } else {
+        bot.sendMessage(chatId, `👤 ID Anda: ${userId}`);
+    }
 });
 
 // ===== START COMMAND =====
 bot.onText(/\/start/, (msg) => {
     const chatId = msg.chat.id;
+    let status = cekMember(msg.from.id);
 
     const welcomeMessage = `
 🎉 SELAMAT DATANG DI BOT REKAP 🙌
@@ -222,7 +233,11 @@ Keunggulan fitur:
 ⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
 `;
 
-    bot.sendMessage(chatId, welcomeMessage);
+    if (msg.from.id !== adminId && status === "active") {
+        bot.sendMessage(chatId, "Selamat! Anda aktif berlangganan ✅");
+    } else {
+        bot.sendMessage(chatId, welcomeMessage);
+    }
 });
 
 // ===== COMMAND LIST TERPISAH =====
@@ -240,7 +255,7 @@ bot.onText(/\/command/, (msg) => {
 /addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
 /hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId>
 /listgrub     - Menampilkan semua grup berlangganan
-/cekidgrub    - Menampilkan ID grup tempat command dijalankan
+/cekid        - Menampilkan ID grup & ID user
 /command      - Menampilkan daftar semua command (ini)
 `;
         bot.sendMessage(chatId, adminCommands);
@@ -249,7 +264,7 @@ bot.onText(/\/command/, (msg) => {
 📜 Command Grup:
 
 /rekap        - Rekap list KB (harus reply pesan list)
-/cekidgrub    - Menampilkan ID grup
+/cekid        - Menampilkan ID grup & ID Anda
 `;
         bot.sendMessage(chatId, groupCommands);
     } else {
@@ -258,6 +273,7 @@ bot.onText(/\/command/, (msg) => {
 
 /start        - Menampilkan pesan selamat datang
 /rekap        - Rekap list KB (jika berlangganan)
+/cekid        - Menampilkan ID Anda
 `;
         bot.sendMessage(chatId, userCommands);
     }
@@ -270,7 +286,7 @@ bot.on("message", async msg => {
     if (!text) return;
 
     // Abaikan /start, /command dan semua command admin
-    if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub)/)) return;
+    if(text.startsWith("/start") || text.startsWith("/command") || text.match(/^\/(adduser|hapususer|listuser|addgroup|hapusgrub|listgrub|cekid)/)) return;
 
     let db = loadDB();
     let isGroup = msg.chat.type.includes("group");

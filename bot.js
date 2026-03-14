@@ -124,18 +124,18 @@ let saldo=saldoKecil+saldoBesar;
 let kurang="";
 
 if(totalKecil>totalBesar)
-kurang=`🐠 BESAR kurang ${totalKecil-totalBesar}`;
+kurang=`🔷 BESAR kurang ${totalKecil-totalBesar}`;
 
 else if(totalBesar>totalKecil)
-kurang=`🐠 KECIL kurang ${totalBesar-totalKecil}`;
+kurang=`🔶 KECIL kurang ${totalBesar-totalKecil}`;
 
 else
-kurang=`🐠 KECIL dan BESAR sama`;
+kurang=`📊 KECIL dan BESAR sama`;
 
 return `
-🔵 KECIL : ${kecil.join(", ")} = ${totalKecil}
+🔶 KECIL : ${kecil.join(", ")} = ${totalKecil}
 
-🔵 BESAR : ${besar.join(", ")} = ${totalBesar}
+🔷 BESAR : ${besar.join(", ")} = ${totalBesar}
 
 ${kurang}
 

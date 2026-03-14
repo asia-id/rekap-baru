@@ -121,23 +121,23 @@ let totalBesar=besar.reduce((a,b)=>a+b,0);
 
 let saldo=saldoKecil+saldoBesar;
 
-let kurang="";
+let hasil="";
 
-if(totalKecil>totalBesar)
-kurang=`🔷 BESAR kurang ${totalKecil-totalBesar}`;
-
-else if(totalBesar>totalKecil)
-kurang=`🔶 KECIL kurang ${totalBesar-totalKecil}`;
-
-else
-kurang=`📊 KECIL dan BESAR sama`;
+// ===== EMOJI LOGIC =====
+if(totalKecil===totalBesar){
+hasil=`🥳 KECIL dan BESAR sama`;
+}else if(totalKecil>totalBesar){
+hasil=`📉 BESAR kurang ${totalKecil-totalBesar}`;
+}else{
+hasil=`📉 KECIL kurang ${totalBesar-totalKecil}`;
+}
 
 return `
 🔶 KECIL : ${kecil.join(", ")} = ${totalKecil}
 
 🔷 BESAR : ${besar.join(", ")} = ${totalBesar}
 
-${kurang}
+${hasil}
 
 💰 Saldo : ${saldo} K
 `;

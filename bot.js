@@ -131,21 +131,28 @@ bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
         db.members[userId] = expired;
         saveDB(db);
 
-        bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${new Date(expired).toLocaleString()}`);
+        bot.sendMessage(msg.chat.id, `✅ User berhasil ditambahkan\nUser ID: ${userId}\nAktif sampai: ${new Date(expired).toLocaleString()}`);
     } catch (e) {
         bot.sendMessage(msg.chat.id, "❌ Format durasi salah");
     }
 });
 
 // ===== ADD GROUP =====
-bot.onText(/\/addgroup (-?\d+)/, (msg, match) => {
+bot.onText(/\/addgroup (.+)/, (msg, match) => {
     if (msg.from.id !== adminId) return;
 
+    let groupId = match[1];
+
+    if (!groupId.startsWith("-")) {
+        bot.sendMessage(msg.chat.id, "❌ Format salah, ID grup harus diawali dengan '-'");
+        return;
+    }
+
     let db = loadDB();
-    db.groups[match[1]] = true;
+    db.groups[groupId] = true;
     saveDB(db);
 
-    bot.sendMessage(msg.chat.id, "✅ Grup ditambahkan");
+    bot.sendMessage(msg.chat.id, `✅ Grup berhasil ditambahkan\nGrup ID: ${groupId}`);
 });
 
 // ===== HAPUS USER =====
@@ -156,21 +163,28 @@ bot.onText(/\/hapususer (\d+)/, (msg, match) => {
     if(db.members[userId]){
         delete db.members[userId];
         saveDB(db);
-        bot.sendMessage(msg.chat.id, `✅ User ${userId} dihapus dari langganan`);
+        bot.sendMessage(msg.chat.id, `✅ User berhasil dihapus\nUser ID: ${userId}`);
     } else {
         bot.sendMessage(msg.chat.id, `⚠️ User ${userId} tidak ditemukan`);
     }
 });
 
 // ===== HAPUS GRUB =====
-bot.onText(/\/hapusgrub (-?\d+)/, (msg, match) => {
+bot.onText(/\/hapusgrub (.+)/, (msg, match) => {
     if (msg.from.id !== adminId) return;
+
     let groupId = match[1];
+
+    if (!groupId.startsWith("-")) {
+        bot.sendMessage(msg.chat.id, "❌ Format salah, ID grup harus diawali dengan '-'");
+        return;
+    }
+
     let db = loadDB();
     if(db.groups[groupId]){
         delete db.groups[groupId];
         saveDB(db);
-        bot.sendMessage(msg.chat.id, `✅ Grup ${groupId} dihapus dari langganan`);
+        bot.sendMessage(msg.chat.id, `✅ Grup berhasil dihapus\nGrup ID: ${groupId}`);
     } else {
         bot.sendMessage(msg.chat.id, `⚠️ Grup ${groupId} tidak ditemukan`);
     }
@@ -237,8 +251,8 @@ bot.onText(/\/command/, (msg) => {
 /adduser      - Menambahkan user dengan durasi, format: /adduser <userId> <durasi>
 /hapususer    - Menghapus user dari langganan, format: /hapususer <userId>
 /listuser     - Menampilkan semua user berlangganan
-/addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId>
-/hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId>
+/addgroup     - Menambahkan grup ke list berlangganan, format: /addgroup <groupId> (harus pakai "-")
+/hapusgrub    - Menghapus grup dari langganan, format: /hapusgrub <groupId> (harus pakai "-")
 /listgrub     - Menampilkan semua grup berlangganan
 /cekidgrub    - Menampilkan ID grup tempat command dijalankan
 /command      - Menampilkan daftar semua command (ini)

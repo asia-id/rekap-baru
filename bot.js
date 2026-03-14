@@ -13,126 +13,101 @@ const adminId = 6623205535;
 // ===== DATABASE =====
 const dbFile = "database.json";
 
-function loadDB(){
-if(!fs.existsSync(dbFile)){
-fs.writeFileSync(dbFile,JSON.stringify({members:{},groups:{}},null,2));
-}
-return JSON.parse(fs.readFileSync(dbFile));
+function loadDB() {
+    if (!fs.existsSync(dbFile)) {
+        fs.writeFileSync(dbFile, JSON.stringify({ members: {}, groups: {} }, null, 2));
+    }
+    return JSON.parse(fs.readFileSync(dbFile));
 }
 
-function saveDB(data){
-fs.writeFileSync(dbFile,JSON.stringify(data,null,2));
+function saveDB(data) {
+    fs.writeFileSync(dbFile, JSON.stringify(data, null, 2));
 }
 
 // ===== PARSE DURASI =====
-function parseDurasi(text){
+function parseDurasi(text) {
+    let now = new Date();
+    let match = text.match(/(\d+)/);
+    let angka = match ? parseInt(match[1]) : 1;
 
-let now = new Date();
+    text = text.toLowerCase();
 
-let match = text.match(/(\d+)/);
-let angka = match ? parseInt(match[1]) : 1;
+    if (text.includes("hari")) now.setDate(now.getDate() + angka);
+    else if (text.includes("minggu")) now.setDate(now.getDate() + (angka * 7));
+    else if (text.includes("bulan")) now.setMonth(now.getMonth() + angka);
+    else if (text.includes("tahun")) now.setFullYear(now.getFullYear() + angka);
+    else throw new Error("Format durasi salah");
 
-text = text.toLowerCase();
-
-if(text.includes("hari"))
-now.setDate(now.getDate()+angka);
-
-else if(text.includes("minggu"))
-now.setDate(now.getDate()+(angka*7));
-
-else if(text.includes("bulan"))
-now.setMonth(now.getMonth()+angka);
-
-else if(text.includes("tahun"))
-now.setFullYear(now.getFullYear()+angka);
-
-else
-throw new Error("Format durasi salah");
-
-return now.getTime();
-
+    return now.getTime();
 }
 
 // ===== CEK MEMBER EXPIRED =====
-function cekMember(id){
+function cekMember(id) {
+    let db = loadDB();
+    if (!db.members[id]) return "notfound";
 
-let db = loadDB();
+    if (Date.now() > db.members[id]) {
+        delete db.members[id];
+        saveDB(db);
+        return "expired";
+    }
 
-if(!db.members[id]) return "notfound";
-
-if(Date.now() > db.members[id]){
-delete db.members[id];
-saveDB(db);
-return "expired";
-}
-
-return "active";
-
+    return "active";
 }
 
 // ===== HITUNG LIST =====
-function hitungList(text){
+function hitungList(text) {
+    if (!text || !text.trim()) return "⚠️ Teks kosong";
 
-if (!text || !text.trim()) return "⚠️ Teks kosong";
+    let kecil = [], besar = [];
+    let saldoKecil = 0, saldoBesar = 0;
 
-let kecil=[], besar=[];
-let saldoKecil=0;
-let saldoBesar=0;
+    let lines = text.split("\n");
+    let mode = "";
 
-let lines=text.split("\n");
-let mode="";
+    lines.forEach(line => {
+        line = line.trim();
+        if (!line) return;
 
-lines.forEach(line=>{
+        if (line.toLowerCase().startsWith("kecil")) {
+            mode = "kecil";
+            return;
+        }
+        if (line.toLowerCase().startsWith("besar")) {
+            mode = "besar";
+            return;
+        }
 
-line=line.trim();
+        let match = line.match(/(\d+)/g);
+        if (!match) return;
 
-if(!line) return;
+        let angka = parseInt(match[match.length - 1]);
 
-if(line.toLowerCase().startsWith("kecil")){
-mode="kecil";
-return;
-}
+        if (mode == "kecil") {
+            kecil.push(angka);
+            saldoKecil += angka;
+        }
+        if (mode == "besar") {
+            besar.push(angka);
+            saldoBesar += angka;
+        }
+    });
 
-if(line.toLowerCase().startsWith("besar")){
-mode="besar";
-return;
-}
+    let totalKecil = kecil.reduce((a, b) => a + b, 0);
+    let totalBesar = besar.reduce((a, b) => a + b, 0);
+    let saldo = saldoKecil + saldoBesar;
 
-let match=line.match(/(\d+)/g);
+    let hasil = "";
 
-if(!match) return;
+    if (totalKecil === totalBesar) {
+        hasil = `🥳 KECIL dan BESAR sama`;
+    } else if (totalKecil > totalBesar) {
+        hasil = `📉 BESAR kurang: ${totalKecil - totalBesar}`;
+    } else {
+        hasil = `📉 KECIL kurang: ${totalBesar - totalKecil}`;
+    }
 
-let angka=parseInt(match[match.length-1]);
-
-if(mode=="kecil"){
-kecil.push(angka);
-saldoKecil+=angka;
-}
-
-if(mode=="besar"){
-besar.push(angka);
-saldoBesar+=angka;
-}
-
-});
-
-let totalKecil=kecil.reduce((a,b)=>a+b,0);
-let totalBesar=besar.reduce((a,b)=>a+b,0);
-
-let saldo=saldoKecil+saldoBesar;
-
-let hasil="";
-
-// ===== EMOJI LOGIC =====
-if(totalKecil===totalBesar){
-hasil=`🥳 KECIL dan BESAR sama`;
-}else if(totalKecil>totalBesar){
-hasil=`📉 BESAR kurang: ${totalKecil-totalBesar}`;
-}else{
-hasil=`📉 KECIL kurang: ${totalBesar-totalKecil}`;
-}
-
-return `
+    return `
 🔶 KECIL : ${kecil.join(", ")} = ${totalKecil}
 
 🔷 BESAR : ${besar.join(", ")} = ${totalBesar}
@@ -141,143 +116,117 @@ ${hasil}
 
 💰 Saldo Anda Seharusnya : ${saldo} K
 `;
-
 }
 
 // ===== ADD USER DENGAN DURASI =====
-bot.onText(/\/adduser (\d+) (.+)/,(msg,match)=>{
+bot.onText(/\/adduser (\d+) (.+)/, (msg, match) => {
+    if (msg.from.id !== adminId) return;
 
-if(msg.from.id!==adminId) return;
+    let userId = match[1];
+    let durasi = match[2];
 
-let userId = match[1];
-let durasi = match[2];
+    try {
+        let expired = parseDurasi(durasi);
+        let db = loadDB();
+        db.members[userId] = expired;
+        saveDB(db);
 
-try{
-
-let expired = parseDurasi(durasi);
-
-let db = loadDB();
-
-db.members[userId] = expired;
-
-saveDB(db);
-
-bot.sendMessage(msg.chat.id,`✅ User ${userId} aktif sampai ${new Date(expired).toLocaleString()}`);
-
-}catch(e){
-
-bot.sendMessage(msg.chat.id,"❌ Format durasi salah");
-
-}
-
+        bot.sendMessage(msg.chat.id, `✅ User ${userId} aktif sampai ${new Date(expired).toLocaleString()}`);
+    } catch (e) {
+        bot.sendMessage(msg.chat.id, "❌ Format durasi salah");
+    }
 });
 
 // ===== ADD GROUP =====
-bot.onText(/\/addgroup (-?\d+)/,(msg,match)=>{
+bot.onText(/\/addgroup (-?\d+)/, (msg, match) => {
+    if (msg.from.id !== adminId) return;
 
-if(msg.from.id!==adminId) return;
+    let db = loadDB();
+    db.groups[match[1]] = true;
+    saveDB(db);
 
-let db=loadDB();
-
-db.groups[match[1]]=true;
-
-saveDB(db);
-
-bot.sendMessage(msg.chat.id,"✅ Grup ditambahkan");
-
+    bot.sendMessage(msg.chat.id, "✅ Grup ditambahkan");
 });
 
 // ===== CEK ID GRUP =====
-bot.onText(/\/cekidgrub/,msg=>{
+bot.onText(/\/cekidgrub/, msg => {
+    if (!msg.chat.type.includes("group")) return;
+    bot.sendMessage(msg.chat.id, `ID Grup : ${msg.chat.id}`);
+});
 
-if(!msg.chat.type.includes("group")) return;
+// ===== START COMMAND =====
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
 
-bot.sendMessage(msg.chat.id,`ID Grup : ${msg.chat.id}`);
+    const welcomeMessage = `
+🎉 SELAMAT DATANG DI BOT REKAP 🙌
 
+Agar bisa akses bot ini, Anda harus berlangganan terlebih dahulu, hubungi developer @vixzaaFy ✅
+
+Keunggulan fitur:
+- Rekap list KB
+- Dapat dimasukkan ke grup KB
+
+⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
+`;
+
+    bot.sendMessage(chatId, welcomeMessage);
 });
 
 // ===== MESSAGE HANDLER =====
-bot.on("message",async msg=>{
+bot.on("message", async msg => {
+    let chatId = msg.chat.id;
+    let text = (msg.text || "").trim();
+    if (!text) return;
 
-let chatId=msg.chat.id;
-let text=(msg.text||"").trim();
+    let db = loadDB();
+    let isGroup = msg.chat.type.includes("group");
 
-if(!text) return;
+    if (isGroup) {
+        if (!text.startsWith("/rekap")) return;
 
-let db=loadDB();
+        if (!db.groups[chatId]) {
+            bot.sendMessage(chatId, "Grub belum berlangganan☹️ hubungi @vixzaaFy");
+            return;
+        }
 
-let isGroup=msg.chat.type.includes("group");
+        try {
+            let member = await bot.getChatMember(chatId, msg.from.id);
+            if (member.status !== "administrator" && member.status !== "creator") {
+                bot.sendMessage(chatId, "❌ Hanya admin grup yang bisa menggunakan bot ini");
+                return;
+            }
+        } catch (e) {
+            return;
+        }
 
-if(isGroup){
+        if (!msg.reply_to_message) {
+            bot.sendMessage(chatId, "⚠️ Reply list dengan /rekap");
+            return;
+        }
 
-if(!text.startsWith("/rekap")) return;
+        bot.sendMessage(chatId, hitungList(msg.reply_to_message.text));
 
-if(!db.groups[chatId]){
+    } else {
+        if (msg.from.id !== adminId) {
+            let status = cekMember(msg.from.id);
 
-bot.sendMessage(chatId,"Grub belum berlangganan☹️ hubungi @vixzaaFy");
+            if (status === "notfound") {
+                bot.sendMessage(chatId, "❌ bot rekap hanya untuk yang berlangganan, hubungi @vixzaaFy");
+                return;
+            }
 
-return;
+            if (status === "expired") {
+                bot.sendMessage(chatId, "❌ masa aktif kamu sudah habis");
+                return;
+            }
+        }
 
-}
-
-// ===== CEK ADMIN GRUP =====
-try{
-
-let member = await bot.getChatMember(chatId,msg.from.id);
-
-if(member.status!=="administrator" && member.status!=="creator"){
-
-bot.sendMessage(chatId,"❌ Hanya admin grup yang bisa menggunakan bot ini");
-
-return;
-
-}
-
-}catch(e){
-return;
-}
-
-if(!msg.reply_to_message){
-
-bot.sendMessage(chatId,"⚠️ Reply list dengan /rekap");
-
-return;
-
-}
-
-bot.sendMessage(chatId,hitungList(msg.reply_to_message.text));
-
-}else{
-
-if(msg.from.id!==adminId){
-
-let status = cekMember(msg.from.id);
-
-if(status==="notfound"){
-
-bot.sendMessage(chatId,"❌ bot rekap hanya untuk yang berlangganan,hubungi @vixzaaFy");
-
-return;
-
-}
-
-if(status==="expired"){
-
-bot.sendMessage(chatId,"❌ masa aktif kamu sudah habis");
-
-return;
-
-}
-
-}
-
-bot.sendMessage(chatId,hitungList(text));
-
-}
-
+        bot.sendMessage(chatId, hitungList(text));
+    }
 });
 
 // ===== ERROR =====
-bot.on("polling_error",err=>{
-console.log(err.message);
+bot.on("polling_error", err => {
+    console.log(err.message);
 });

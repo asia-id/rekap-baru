@@ -255,7 +255,7 @@ let status = cekMember(msg.from.id);
 
 if(status==="notfound"){
 
-bot.sendMessage(chatId,"❌ bot rekap hanya untuk yang berlangganan");
+bot.sendMessage(chatId,"❌ bot rekap hanya untuk yang berlangganan,hubungi @vixzaaFy");
 
 return;
 

@@ -121,6 +121,23 @@ const waitingForDeleteUser = {};
 const waitingForAddGroup = {};
 const waitingForDeleteGroup = {};
 
+// ===== START COMMAND =====
+bot.onText(/\/start/, (msg) => {
+    const chatId = msg.chat.id;
+    const welcomeMessage = `
+🎉 SELAMAT DATANG DI BOT REKAP 🙌
+
+Agar bisa akses bot ini, Anda harus berlangganan terlebih dahulu, hubungi developer @vixzaaFy ✅
+
+Keunggulan fitur:
+- Rekap list KB
+- Dapat dimasukkan ke grup KB
+
+⚠️ NOTE: BOT INI HANYA BISA DIGUNAKAN UNTUK LIST KB.
+`;
+    bot.sendMessage(chatId, welcomeMessage);
+});
+
 // ===== COMMAND CONVERSATION MODE =====
 bot.onText(/^\/adduser$/, msg => {
     if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin");
@@ -128,20 +145,17 @@ bot.onText(/^\/adduser$/, msg => {
     bot.sendMessage(msg.chat.id, `📌 SILAHKAN KIRIM ID USER DAN DURASI
 Contoh: "828376637 1 hari" atau "828376637 permanen"`);
 });
-
 bot.onText(/^\/hapususer$/, msg => {
     if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin");
     waitingForDeleteUser[msg.from.id] = true;
     bot.sendMessage(msg.chat.id, `📌 SILAHKAN KIRIM ID USER YANG INGIN DIHAPUS`);
 });
-
 bot.onText(/^\/addgroup$/, msg => {
     if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin");
     waitingForAddGroup[msg.from.id] = true;
     bot.sendMessage(msg.chat.id, `📌 SILAHKAN KIRIM ID GRUP DAN DURASI
 Contoh: "123456789 1 hari" atau "123456789 permanen"`);
 });
-
 bot.onText(/^\/hapusgrub$/, msg => {
     if(msg.from.id !== adminId) return bot.sendMessage(msg.chat.id, "❌ Hanya admin");
     waitingForDeleteGroup[msg.from.id] = true;
@@ -187,7 +201,7 @@ bot.on("message", async msg => {
 
     const db = loadDB();
 
-    // --- ADD USER ---
+    // --- CONVERSATION MODE ---
     if(waitingForAddUser[msg.from.id]){
         const parts = text.split(" ");
         if(parts.length < 2){ bot.sendMessage(chatId, "❌ Format salah"); return; }
@@ -205,7 +219,6 @@ bot.on("message", async msg => {
         return;
     }
 
-    // --- HAPUS USER ---
     if(waitingForDeleteUser[msg.from.id]){
         const userId = text;
         if(db.members[userId]){
@@ -218,7 +231,6 @@ bot.on("message", async msg => {
         return;
     }
 
-    // --- ADD GROUP ---
     if(waitingForAddGroup[msg.from.id]){
         const parts = text.split(" ");
         if(parts.length < 2){ bot.sendMessage(chatId, "❌ Format salah"); return; }
@@ -236,7 +248,6 @@ bot.on("message", async msg => {
         return;
     }
 
-    // --- HAPUS GRUP ---
     if(waitingForDeleteGroup[msg.from.id]){
         const groupId = text;
         if(db.groups[groupId]){
@@ -261,8 +272,8 @@ bot.on("message", async msg => {
             return;
         }
 
-        // fallback: langsung hitung list jika admin kirim teks list
-        if(text.startsWith("/rekap") && msg.reply_to_message){
+        // proses /rekap reply
+        if(msg.reply_to_message && text.startsWith("/rekap")){
             const replyText = msg.reply_to_message.text;
             if(!replyText || !replyText.trim()){ bot.sendMessage(chatId, "⚠️ Pesan reply kosong"); return; }
             bot.sendMessage(chatId, hitungList(replyText));
